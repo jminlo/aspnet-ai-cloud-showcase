@@ -96,7 +96,7 @@ var auth = builder.Services
     .EnableTokenAcquisitionToCallDownstreamApi(new[] {
         "User.Read",
         "User.Read.All",
-        "api://70294acc-b64c-4cf7-8b50-f57d6b797971/User_Access"
+        "api://YOUR-APPLICATION-ID/User_Access"
     })
     .AddDistributedTokenCaches();
 
@@ -239,15 +239,15 @@ static void ApplyDeploymentConfiguration(WebApplicationBuilder builder)
         return;
     }
 
-    if (hostName.Contains("cstest", StringComparison.OrdinalIgnoreCase))
+    if (hostName.Contains("test", StringComparison.OrdinalIgnoreCase))
     {
         builder.Configuration.AddJsonFile("appsettings.Test.json", optional: true, reloadOnChange: true);
     }
-    else if (hostName.Contains("csdev", StringComparison.OrdinalIgnoreCase))
+    else if (hostName.Contains("dev", StringComparison.OrdinalIgnoreCase))
     {
         builder.Configuration.AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
     }
-    else if (hostName.Contains("csprod", StringComparison.OrdinalIgnoreCase))
+    else if (hostName.Contains("prod", StringComparison.OrdinalIgnoreCase))
     {
         builder.Configuration.AddJsonFile("appsettings.Production.json", optional: true, reloadOnChange: true);
     }
