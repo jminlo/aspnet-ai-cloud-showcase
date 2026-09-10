@@ -269,15 +269,15 @@ static void ApplyDeploymentConfiguration(WebApplicationBuilder builder)
         return;
     }
 
-    if (hostName.Contains("cstest", StringComparison.OrdinalIgnoreCase))
+    if (hostName.Contains("test", StringComparison.OrdinalIgnoreCase))
     {
         builder.Configuration.AddJsonFile("appsettings.Test.json", optional: true, reloadOnChange: true);
     }
-    else if (hostName.Contains("csdev", StringComparison.OrdinalIgnoreCase))
+    else if (hostName.Contains("dev", StringComparison.OrdinalIgnoreCase))
     {
         builder.Configuration.AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
     }
-    else if (hostName.Contains("csprod", StringComparison.OrdinalIgnoreCase))
+    else if (hostName.Contains("prod", StringComparison.OrdinalIgnoreCase))
     {
         builder.Configuration.AddJsonFile("appsettings.Production.json", optional: true, reloadOnChange: true);
     }
