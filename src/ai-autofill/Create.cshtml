@@ -1,0 +1,234 @@
+﻿@model TMS_SharedLibrary.Models.Toy
+
+@inject IViewLocalizer Localizer
+
+@{
+    ViewData["Title"] = Localizer["Title"];
+}
+
+<div class="container mt-4">
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-primary text-white rounded-top">
+            <h3 class="mb-0">@Localizer["AddNewToy"]</h3>
+        </div>
+
+        <div class="card-body rounded-bottom">
+            <form asp-action="Create" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="IsAvailable" value="true" />
+
+                <div class="row g-4">
+
+                    <div class="col-md-7">
+
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label">@Localizer["ToyName"] <span style="color: red;">*</span></label>
+                            <input asp-for="Name" class="form-control" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="LocationCode" class="form-label">@Localizer["ToyLocation"] <span style="color: red;">*</span></label>
+                            <input asp-for="LocationCode" class="form-control" />
+                            <span asp-validation-for="LocationCode" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Material" class="form-label">@Localizer["Material"]</label>
+                            <select asp-for="Material" class="form-select">
+                                <option value="">@Localizer["SelectMaterial"]</option>
+                                <option>@Localizer["Wood"]</option>
+                                <option>@Localizer["Plastic"]</option>
+                                <option>@Localizer["Plush"]</option>
+                                <option>@Localizer["Metal"]</option>
+                                <option>@Localizer["Rubber"]</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Category" class="form-label">@Localizer["DevelopmentGoal"] </label>
+                            <select asp-for="Category" class="form-select">
+                                <option value="">@Localizer["SelectDevelopmentGoal"]</option>
+                                <option>@Localizer["Cognitive"]</option>
+                                <option>@Localizer["SocialEmotional"]</option>
+                                <option>@Localizer["Sensory"]</option>
+                                <option>@Localizer["Physical"]</option>
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-5 text-center">
+                        <label class="form-label">@Localizer["ToyImage"]</label>
+
+                        <img id="imagePreview"
+                             class="img-fluid rounded border mb-3"
+                             style="max-height: 220px; object-fit: contain; display:none;" />
+
+                        <input type="file" id="imageInput" name="imageFile"
+                               class="form-control" accept="image/*" />
+
+                        <input type="hidden" asp-for="ImagePath" />
+                        <span asp-validation-for="ImagePath" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label asp-for="Description" class="form-label mb-0">@Localizer["Description"]</label>
+                            <button type="button" id="aiAutofillBtn" class="btn btn-outline-primary btn-sm">
+                                @Localizer["AIAutofill"]
+                            </button>
+                        </div>
+                        <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                        <div id="aiAutofillStatus" class="form-text"></div>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="AdditionalInformation" class="form-label">@Localizer["AdditionalInformation"]</label>
+                        <textarea asp-for="AdditionalInformation" class="form-control" rows="3"></textarea>
+                        <span asp-validation-for="AdditionalInformation" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary px-4">@Localizer["AddToy"]</button>
+                        <a asp-action="Index" class="btn btn-outline-secondary px-4">@Localizer["Cancel"]</a>
+                    </div>
+
+                </div>
+
+                <div asp-validation-summary="ModelOnly" class="text-danger mt-2"></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const messages = {
+                enterToyNameFirst: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["EnterToyNameFirst"].Value)),
+                selectToyImageFirst: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["SelectToyImageFirst"].Value)),
+                generatingSuggestions: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["GeneratingSuggestions"].Value)),
+                aiSuggestionsAdded: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["AISuggestionsAdded"].Value)),
+                unableToGenerateSuggestions: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["UnableToGenerateSuggestions"].Value)),
+                requestFailed: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["RequestFailed"].Value))
+            };
+
+            const readResponse = async (response) => {
+                const text = await response.text();
+
+                if (!text) {
+                    return null;
+                }
+
+                try {
+                    return JSON.parse(text);
+                } catch {
+                    if (!response.ok) {
+                        throw new Error(text || messages.requestFailed);
+                    }
+
+                    throw new Error(messages.unableToGenerateSuggestions);
+                }
+            };
+
+            const form = document.querySelector('form');
+            const imageInput = document.getElementById('imageInput');
+            const imagePreview = document.getElementById('imagePreview');
+            const nameInput = document.getElementById('Name');
+            const materialInput = document.getElementById('Material');
+            const categoryInput = document.getElementById('Category');
+            const descriptionInput = document.getElementById('Description');
+            const aiButton = document.getElementById('aiAutofillBtn');
+            const status = document.getElementById('aiAutofillStatus');
+
+            if (!form || !imageInput || !imagePreview || !nameInput || !materialInput || !categoryInput || !descriptionInput || !aiButton || !status) {
+                return;
+            }
+
+            imageInput.addEventListener('change', (e) => {
+                const file = e.target.files?.[0];
+
+                if (!file) {
+                    imagePreview.style.display = 'none';
+                    imagePreview.src = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    imagePreview.src = ev.target.result;
+                    imagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            });
+
+            aiButton.addEventListener('click', async () => {
+                const file = imageInput.files?.[0];
+                const name = nameInput.value?.trim();
+                const token = form.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                status.textContent = '';
+                status.className = 'form-text';
+
+                if (!name) {
+                    status.textContent = messages.enterToyNameFirst;
+                    status.classList.add('text-danger');
+                    return;
+                }
+
+                if (!file) {
+                    status.textContent = messages.selectToyImageFirst;
+                    status.classList.add('text-danger');
+                    return;
+                }
+
+                aiButton.disabled = true;
+                status.textContent = messages.generatingSuggestions;
+
+                try {
+                    const data = new FormData();
+                    data.append('name', name);
+                    data.append('imageFile', file);
+
+                    const response = await fetch('@Url.Action("SuggestToyFields", "Toy")', {
+                        method: 'POST',
+                        body: data,
+                        headers: token ? { 'RequestVerificationToken': token } : {}
+                    });
+
+                    const result = await readResponse(response);
+
+                    if (!response.ok) {
+                        throw new Error(result?.error || result?.message || messages.requestFailed);
+                    }
+
+                    if (result.material && [...materialInput.options].some(option => option.value === result.material)) {
+                        materialInput.value = result.material;
+                    }
+
+                    if (result.category && [...categoryInput.options].some(option => option.value === result.category)) {
+                        categoryInput.value = result.category;
+                    }
+
+                    if (result.description) {
+                        descriptionInput.value = result.description;
+                    }
+
+                    status.textContent = messages.aiSuggestionsAdded;
+                    status.className = 'form-text text-success';
+                } catch (error) {
+                    status.textContent = error.message || messages.unableToGenerateSuggestions;
+                    status.className = 'form-text text-danger';
+                } finally {
+                    aiButton.disabled = false;
+                }
+            });
+        });
+    </script>
+}
